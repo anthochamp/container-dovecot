@@ -9,6 +9,7 @@ RUN set -ex; \
 	addgroup -g $VMAIL_GID vmail; \
 	adduser -G vmail -u $VMAIL_UID -h /var/vmail -s /sbin/nologin -D vmail
 
+# hadolint ignore=DL3018
 RUN apk add --update --no-cache jinja2-cli supervisor stunnel rspamd-client \
 	dovecot dovecot-mysql dovecot-pop3d dovecot-lmtpd dovecot-pigeonhole-plugin
 
@@ -19,8 +20,9 @@ RUN set -ex; \
 	chmod 775 /var/log/dovecot
 
 COPY --chmod=644 /rootfs/config /etc/dovecot
-RUN chmod 755 /etc/dovecot/virtual /etc/dovecot/virtual/* /etc/dovecot/conf.d
-RUN mkdir -p /etc/dovecot/tls
+RUN set -ex; \
+	chmod 755 /etc/dovecot/virtual /etc/dovecot/virtual/* /etc/dovecot/conf.d; \
+	mkdir -p /etc/dovecot/tls
 
 COPY --chmod=644 /rootfs/supervisord.conf /etc
 COPY --chmod=644 /rootfs/syslog.conf /etc
