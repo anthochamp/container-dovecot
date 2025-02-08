@@ -1,0 +1,40 @@
+name: dovecot container pre-publish
+
+on:
+  workflow_call:
+    inputs:
+      checkout-ref:
+        description: The branch, tag or SHA to checkout. Defaults to the reference or SHA for that event.
+        required: false
+        type: string
+      dockerfile-dir:
+        description: Dockerfile directory
+        required: false
+        type: string
+    outputs:
+      container-image-name:
+        value: ${{ jobs.dovecot-pre-publish.outputs.container-image-name }}
+      dovecot-version:
+        value: ${{ jobs.dovecot-pre-publish.outputs.dovecot-version }}
+
+jobs:
+  dovecot-pre-publish:
+    runs-on: ubuntu-latest
+    outputs:
+      container-image-name: ${{ steps.container-image-name.outputs.VALUE }}
+      dovecot-version: ${{ steps.dovecot-version.outputs.VERSION }}
+    steps:
+      - name: Compose container image name
+        id: container-image-name
+        run: echo "VALUE=${REPO_NAME#container-}" >>$GITHUB_OUTPUT
+        env:
+          REPO_NAME: ${{ github.event.repository.name }}
+
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ inputs.checkout-ref }}
+
+      - name: Find out embedded dovecot version
+        id: dovecot-version
+        run: echo "VERSION=$(scripts/dovecot-version.sh "${{ inputs.dockerfile-dir }}")" >>$GITHUB_OUTPUT
