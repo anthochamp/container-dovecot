@@ -16,7 +16,7 @@ RUN apk add --update --no-cache jinja2-cli supervisor stunnel rspamd-client \
 # required for dovecot-lda logging
 RUN set -ex; \
 	mkdir -p /var/log/dovecot; \
-	chown dovecot.dovecot /var/log/dovecot; \
+	chown dovecot:dovecot /var/log/dovecot; \
 	chmod 775 /var/log/dovecot
 
 COPY --chmod=644 /rootfs/config /etc/dovecot
