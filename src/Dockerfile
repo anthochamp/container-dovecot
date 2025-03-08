@@ -19,28 +19,28 @@ RUN set -ex; \
 	chown dovecot:dovecot /var/log/dovecot; \
 	chmod 775 /var/log/dovecot
 
-COPY --chmod=644 /rootfs/config /etc/dovecot
+COPY --chmod=644 /rootfs/etc/dovecot /etc/dovecot
 RUN set -ex; \
 	chmod 755 /etc/dovecot/virtual /etc/dovecot/virtual/* /etc/dovecot/conf.d; \
 	mkdir -p /etc/dovecot/tls
 
-COPY --chmod=644 /rootfs/supervisord.conf /etc
-COPY --chmod=644 /rootfs/syslog.conf /etc
+COPY --chmod=644 /rootfs/etc/supervisord.conf /etc
+COPY --chmod=644 /rootfs/etc/syslog.conf /etc
 
 RUN set -ex; \
 	mkdir -p /run/stunnel; \
 	chown stunnel:stunnel /run/stunnel
-COPY --chmod=644 /rootfs/stunnel.conf.j2 /etc/stunnel
+COPY --chmod=644 /rootfs/etc/stunnel/stunnel.conf.j2 /etc/stunnel
 
-COPY /rootfs/sieve /var/lib/dovecot/sieve
+COPY /rootfs/var/lib/dovecot/sieve /var/lib/dovecot/sieve
 RUN set -ex; \
 	sievec /var/lib/dovecot/sieve/global-spam.sieve; \
 	sievec /var/lib/dovecot/sieve/report-spam.sieve; \
 	sievec /var/lib/dovecot/sieve/report-ham.sieve
 
-COPY --chmod=755 /rootfs/sieve-pipe /usr/lib/dovecot/sieve-pipe
+COPY --chmod=755 /rootfs/usr/lib/dovecot/sieve-pipe /usr/lib/dovecot/sieve-pipe
 
-COPY --chmod=755 /rootfs/scripts/* /usr/local/bin
+COPY --chmod=755 /rootfs/usr/local/bin /usr/local/bin
 
 # pop3 (110), imap (143), imaps (993), pop3s (995), sieve (4190)
 EXPOSE 110 143 993 995 4190
@@ -50,9 +50,7 @@ EXPOSE 110 143 993 995 4190
 
 VOLUME ["/etc/dovecot/tls", "/var/vmail/"]
 
-COPY --chmod=755 /rootfs/docker-entrypoint.sh /
-
-ENTRYPOINT ["./docker-entrypoint.sh"]
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 
 CMD [ "supervisord", "-c", "/etc/supervisord.conf" ]
 
