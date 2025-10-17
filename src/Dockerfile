@@ -1,7 +1,7 @@
 FROM alpine:3.22.2@sha256:4b7ce07002c69e8f3d704a9c5d6fd3053be500b7f1c69fc0d80990c2ad8dd412
 
 # Ensures to have consistent mailboxes uid/gid. IDs values must be at
-# least first_valid_uid.
+# least first_valid_uid (see 10-mail.conf.j2).
 ARG VMAIL_UID=500
 ARG VMAIL_GID=500
 
