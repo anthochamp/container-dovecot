@@ -2,5 +2,13 @@
 	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
 	"extends": [
 		"github>anthochamp/dev-toolbox//config-presets/renovate/container"
+	],
+	"packageRules": [
+		{
+			"matchDatasources": ["docker"],
+			"matchPackageNames": ["alpine"],
+			"allowedVersions": "3.21.3",
+			"description": "Pin Alpine to version 3.21.3 for Dovecot 2.3.x"
+		}
 	]
 }
