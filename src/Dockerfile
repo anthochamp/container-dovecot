@@ -1,36 +1,44 @@
-FROM alpine:3.21.3@sha256:a8560b36e8b8210634f77d9f7f9efd7ffa463e380b75e2e74aff4511df3ef88c
+FROM dovecot/dovecot:2.4.2-root@sha256:2954ecbf550bb9d1f1be6f08ee2c826e1c05ae1dadee8c496aaef8bbac612836
 
-# Ensures to have consistent mailboxes uid/gid. IDs values must be at
-# least first_valid_uid (see 10-mail.conf.j2).
-ARG VMAIL_UID=500
-ARG VMAIL_GID=500
+# hadolint ignore=DL3008,DL3009
+RUN set -ex; \
+	apt-get update; \
+	apt-get install -y --no-install-recommends \
+	pipx rspamd supervisor stunnel4; \
+	apt-get clean; \
+	rm -rf /var/lib/apt/lists/*
+
+# Install jinja2-cli globally via pipx
+# hadolint ignore=DL3013
+RUN PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin pipx install jinja2-cli
+
 
 RUN set -ex; \
-	addgroup -g $VMAIL_GID vmail; \
-	adduser -G vmail -u $VMAIL_UID -h /var/vmail -s /sbin/nologin -D vmail
-
-# hadolint ignore=DL3018
-RUN apk add --update --no-cache jinja2-cli supervisor stunnel rspamd-client \
-	dovecot dovecot-mysql dovecot-pop3d dovecot-lmtpd dovecot-pigeonhole-plugin
-
-# required for dovecot-lda logging
-RUN set -ex; \
+	# dovecot binaries live under /dovecot/ in the official image; create a compat
+	# symlink so paths referencing /usr/lib/dovecot (e.g. sieve-pipe) still work.
+	ln -s /dovecot/lib/dovecot /usr/lib/dovecot; \
+	# required for dovecot-lda logging
 	mkdir -p /var/log/dovecot; \
 	chown dovecot:dovecot /var/log/dovecot; \
 	chmod 775 /var/log/dovecot
 
+# Remove the base image's /etc/dovecot entirely; we replace it with our own
+# complete, explicit configuration so no implicit defaults can bleed through.
+RUN rm -rf /etc/dovecot
+
 COPY --chmod=644 /rootfs/etc/dovecot /etc/dovecot
 RUN set -ex; \
+	chmod 600 /etc/dovecot/dovecot-sql.conf.ext.j2; \
 	chmod 755 /etc/dovecot/virtual /etc/dovecot/virtual/* /etc/dovecot/conf.d; \
 	mkdir -p /etc/dovecot/tls
 
-COPY --chmod=644 /rootfs/etc/supervisord.conf /etc
-COPY --chmod=644 /rootfs/etc/syslog.conf /etc
+COPY --chmod=644 /rootfs/etc/supervisord.conf /etc/
+COPY --chmod=644 /rootfs/etc/syslog.conf /etc/
 
 RUN set -ex; \
 	mkdir -p /run/stunnel; \
-	chown stunnel:stunnel /run/stunnel
-COPY --chmod=644 /rootfs/etc/stunnel/stunnel.conf.j2 /etc/stunnel
+	chown stunnel4:stunnel4 /run/stunnel
+COPY --chmod=644 /rootfs/etc/stunnel/stunnel.conf.j2 /etc/stunnel/
 
 COPY /rootfs/var/lib/dovecot/sieve /var/lib/dovecot/sieve
 RUN set -ex; \
@@ -38,7 +46,7 @@ RUN set -ex; \
 	sievec /var/lib/dovecot/sieve/report-spam.sieve; \
 	sievec /var/lib/dovecot/sieve/report-ham.sieve
 
-COPY --chmod=755 /rootfs/usr/lib/dovecot/sieve-pipe /usr/lib/dovecot/sieve-pipe
+COPY --chmod=755 /rootfs/usr/lib/dovecot/sieve-pipe /usr/lib/dovecot/sieve-pipe/
 
 COPY --chmod=755 /rootfs/usr/local/bin /usr/local/bin
 

@@ -8,7 +8,7 @@ fi
 percent=$1
 user=$2
 
-cat <<EOF | /usr/libexec/dovecot/dovecot-lda -d "$user" -o "plugin/quota=maildir:Userquota:noenforcing"
+cat <<EOF | /dovecot/libexec/dovecot/dovecot-lda -d "$user" -o quota_override_flag=noenforcing
 From: $DOVECOT_POSTMASTER_EMAIL
 Subject: Quota warning - $percent% reached
 
