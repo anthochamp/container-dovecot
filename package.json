@@ -13,11 +13,11 @@
 		"postinstall": "is-ci || lefthook install"
 	},
 	"devDependencies": {
-		"@types/node": "24.13.3",
-		"@biomejs/biome": "2.5.6",
-		"tsx": "4.23.5",
+		"@types/node": "24.13.4",
+		"@biomejs/biome": "2.5.12",
+		"tsx": "4.23.13",
 		"typescript": "7.0.2",
-		"lefthook": "2.1.10",
+		"lefthook": "2.1.12",
 		"markdownlint-cli2": "0.23.2",
 		"is-ci": "4.1.0",
 		"@ac-essentials/tsconfig": "0.5.2",
