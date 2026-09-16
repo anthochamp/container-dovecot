@@ -100,7 +100,10 @@ describe("lmtp", () => {
 
 		const session = await openImapSession(imapPort);
 		try {
-			await session.command("A001", 'LOGIN "spamtest@example.com" "spamtest123"');
+			await session.command(
+				"A001",
+				'LOGIN "spamtest@example.com" "spamtest123"',
+			);
 
 			const inboxResp = await session.command("A002", "SELECT INBOX");
 			expect(inboxResp.join("\n")).toMatch(/\* 0 EXISTS/);

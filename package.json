@@ -8,8 +8,8 @@
 		"compile:check": "tsc -noEmit -p ./tsconfig.json",
 		"lint": "oxlint && markdownlint-cli2",
 		"lint:fix": "oxlint --fix && markdownlint-cli2 --fix",
-		"format": "oxfmt --config ./oxfmt.config.mjs .",
-		"format:check": "oxfmt --config ./oxfmt.config.mjs --check .",
+		"format": "oxfmt",
+		"format:check": "oxfmt --check",
 		"postinstall": "is-ci || lefthook install"
 	},
 	"devDependencies": {
@@ -32,6 +32,7 @@
 		"markdownlint-cli2": "0.23.2",
 		"oxfmt": "0.68.0",
 		"oxlint": "1.83.0",
+		"oxlint-tsgolint": "7.0.2001",
 		"tsx": "4.23.5",
 		"typescript": "7.0.2",
 		"vitest": "5.0.0"

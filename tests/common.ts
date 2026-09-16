@@ -51,7 +51,9 @@ export async function openImapSession(port: number): Promise<ImapSession> {
 
 	const starttlsResp = await client.command("T001", "STARTTLS");
 	if (starttlsResp.status !== "OK") {
-		throw new Error(`STARTTLS rejected: ${starttlsResp.status} ${starttlsResp.text}`);
+		throw new Error(
+			`STARTTLS rejected: ${starttlsResp.status} ${starttlsResp.text}`,
+		);
 	}
 
 	const tlsSocket = await TlsSocket.connect(tcp.stream, {
@@ -67,7 +69,10 @@ export async function openImapSession(port: number): Promise<ImapSession> {
 		command: async (tag: string, cmd: string) => {
 			try {
 				const response = await client.command(tag, cmd);
-				return [...response.untagged, `${tag} ${response.status} ${response.text}`];
+				return [
+					...response.untagged,
+					`${tag} ${response.status} ${response.text}`,
+				];
 			} catch (error) {
 				usable = false;
 				throw error;
@@ -110,7 +115,9 @@ export async function deliverMessage(
 	await tcp.connect(lmtpPort, { host: "127.0.0.1" });
 	const [greetingResponse] = await greeting;
 	if (greetingResponse.code !== 220) {
-		throw new Error(`Unexpected LMTP greeting: ${formatSmtpResponse(greetingResponse)}`);
+		throw new Error(
+			`Unexpected LMTP greeting: ${formatSmtpResponse(greetingResponse)}`,
+		);
 	}
 
 	await client.lhlo("test.local");
@@ -163,7 +170,10 @@ CREATE TABLE mail_users (
 );
 `;
 
-async function feedSqlToMariadb(containerName: string, sql: string): Promise<void> {
+async function feedSqlToMariadb(
+	containerName: string,
+	sql: string,
+): Promise<void> {
 	await dockerContainerExec(containerName, "mariadb", {
 		commandArgs: ["-u", "root", "-proot", DB_NAME, "-e", sql],
 	});
@@ -211,7 +221,10 @@ async function isImapReady(port: number): Promise<boolean> {
 	}
 }
 
-type ContainerRunOptions = Omit<DockerContainerRunOptions, "name" | "context" | "detach">;
+type ContainerRunOptions = Omit<
+	DockerContainerRunOptions,
+	"name" | "context" | "detach"
+>;
 
 export function initSuite() {
 	const suffix = randomBytes(8).toString("hex");
@@ -303,7 +316,14 @@ export function initSuite() {
 	return {
 		containerImageName,
 		createUser: async (user: TestUserSpec) => {
-			const { local, domain, password, enabled = true, sendonly = false, quotaBytes = 1024 } = user;
+			const {
+				local,
+				domain,
+				password,
+				enabled = true,
+				sendonly = false,
+				quotaBytes = 1024,
+			} = user;
 			await feedSqlToMariadb(
 				mariadbName,
 				`INSERT INTO mail_users (local, domain, password, enabled, sendonly, quota_bytes) VALUES ('${local}', '${domain}', '${password}', ${enabled ? 1 : 0}, ${sendonly ? 1 : 0}, ${quotaBytes});`,

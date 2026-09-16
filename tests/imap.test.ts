@@ -85,7 +85,10 @@ describe("auth", () => {
 	it("login with valid credentials succeeds", async () => {
 		const session = await openImapSession(imapPort);
 		try {
-			const resp = await session.command("A001", 'LOGIN "alice@example.com" "alice123"');
+			const resp = await session.command(
+				"A001",
+				'LOGIN "alice@example.com" "alice123"',
+			);
 			expect(resp[resp.length - 1]).toMatch(/^A001 OK/);
 		} finally {
 			await session.close();
@@ -95,7 +98,10 @@ describe("auth", () => {
 	it("login with wrong password is rejected", async () => {
 		const session = await openImapSession(imapPort);
 		try {
-			const resp = await session.command("A001", 'LOGIN "alice@example.com" "wrongpassword"');
+			const resp = await session.command(
+				"A001",
+				'LOGIN "alice@example.com" "wrongpassword"',
+			);
 			expect(resp[resp.length - 1]).toMatch(/^A001 NO/);
 		} finally {
 			await session.close();
@@ -105,7 +111,10 @@ describe("auth", () => {
 	it("login with unknown user is rejected", async () => {
 		const session = await openImapSession(imapPort);
 		try {
-			const resp = await session.command("A001", 'LOGIN "nobody@example.com" "somepassword"');
+			const resp = await session.command(
+				"A001",
+				'LOGIN "nobody@example.com" "somepassword"',
+			);
 			expect(resp[resp.length - 1]).toMatch(/^A001 NO/);
 		} finally {
 			await session.close();
@@ -115,7 +124,10 @@ describe("auth", () => {
 	it("login with disabled user is rejected", async () => {
 		const session = await openImapSession(imapPort);
 		try {
-			const resp = await session.command("A001", 'LOGIN "disabled@example.com" "disabled123"');
+			const resp = await session.command(
+				"A001",
+				'LOGIN "disabled@example.com" "disabled123"',
+			);
 			expect(resp[resp.length - 1]).toMatch(/^A001 NO/);
 		} finally {
 			await session.close();
@@ -127,11 +139,16 @@ describe("auth", () => {
 		// Depending on version it either sends A001 NO or closes the connection outright.
 		const session = await openImapSession(imapPort);
 		try {
-			const resp = await session.command("A001", 'LOGIN "sendonly@example.com" "sendonly123"');
+			const resp = await session.command(
+				"A001",
+				'LOGIN "sendonly@example.com" "sendonly123"',
+			);
 			expect(resp[resp.length - 1]).toMatch(/^A001 NO/);
 		} catch (err) {
 			// Connection closed without a tagged response is also a rejection.
-			expect((err as Error).message).toMatch(/Connection closed|Exchange aborted/);
+			expect((err as Error).message).toMatch(
+				/Connection closed|Exchange aborted/,
+			);
 		} finally {
 			await session.close();
 		}
@@ -162,7 +179,9 @@ describe("auth", () => {
 			});
 
 		await readLine(); // greeting
-		await client.write(encodeTextUtf8('A001 LOGIN "alice@example.com" "alice123"\r\n'));
+		await client.write(
+			encodeTextUtf8('A001 LOGIN "alice@example.com" "alice123"\r\n'),
+		);
 		// Dovecot sends * BAD [ALERT] then closes — no tagged response follows.
 		const resp = await readLine();
 		expect(resp).toMatch(/^\* (BAD|NO)/);
