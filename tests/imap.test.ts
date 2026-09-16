@@ -1,5 +1,7 @@
-import { TcpSocket } from "@ac-essentials/misc-util";
-import { beforeAll, expect, suite, test } from "vitest";
+import { encodeTextUtf8 } from "@ac-kit/core";
+import { TcpSocket } from "@ac-kit/node";
+import { beforeAll, expect, describe, it } from "vitest";
+
 import { initSuite, openImapSession } from "./common";
 
 function readFirstLine(client: TcpSocket): Promise<string> {
@@ -18,27 +20,22 @@ function readFirstLine(client: TcpSocket): Promise<string> {
 	});
 }
 
-suite("imap", () => {
-	const { startContainer } = initSuite();
-	let imapPort: number;
-	let healthPort: number;
+describe("imap", () => {
+	const { useContainer } = initSuite();
+	const { imapPort, healthPort } = useContainer();
 
-	beforeAll(async () => {
-		({ imapPort, healthPort } = await startContainer());
-	});
-
-	test("presents an IMAP greeting on port 143", async () => {
+	it("presents an IMAP greeting on port 143", async () => {
 		const client = TcpSocket.from();
-		await client.connect(imapPort, "127.0.0.1");
+		await client.connect(imapPort, { host: "127.0.0.1" });
 		const banner = await readFirstLine(client);
 
 		expect(banner).toMatch(/^\* OK /);
 	});
 
-	test("responds PONG to PING on the health check port", async () => {
+	it("responds PONG to PING on the health check port", async () => {
 		const client = TcpSocket.from();
-		await client.connect(healthPort, "127.0.0.1");
-		await client.write(Buffer.from("PING\n"));
+		await client.connect(healthPort, { host: "127.0.0.1" });
+		await client.write(encodeTextUtf8("PING\n"));
 
 		const response = await new Promise<string>((resolve, reject) => {
 			let buffer = "";
@@ -60,9 +57,8 @@ suite("imap", () => {
 	});
 });
 
-suite("auth", () => {
-	const { createUser, startContainer } = initSuite();
-	let imapPort: number;
+describe("auth", () => {
+	const { createUser, useContainer } = initSuite();
 
 	beforeAll(async () => {
 		await createUser({
@@ -82,83 +78,69 @@ suite("auth", () => {
 			password: "{PLAIN}sendonly123",
 			sendonly: true,
 		});
-		({ imapPort } = await startContainer());
 	});
 
-	test("login with valid credentials succeeds", async () => {
+	const { imapPort } = useContainer();
+
+	it("login with valid credentials succeeds", async () => {
 		const session = await openImapSession(imapPort);
 		try {
-			const resp = await session.command(
-				"A001",
-				'LOGIN "alice@example.com" "alice123"',
-			);
+			const resp = await session.command("A001", 'LOGIN "alice@example.com" "alice123"');
 			expect(resp[resp.length - 1]).toMatch(/^A001 OK/);
 		} finally {
 			await session.close();
 		}
 	});
 
-	test("login with wrong password is rejected", async () => {
+	it("login with wrong password is rejected", async () => {
 		const session = await openImapSession(imapPort);
 		try {
-			const resp = await session.command(
-				"A001",
-				'LOGIN "alice@example.com" "wrongpassword"',
-			);
+			const resp = await session.command("A001", 'LOGIN "alice@example.com" "wrongpassword"');
 			expect(resp[resp.length - 1]).toMatch(/^A001 NO/);
 		} finally {
 			await session.close();
 		}
 	});
 
-	test("login with unknown user is rejected", async () => {
+	it("login with unknown user is rejected", async () => {
 		const session = await openImapSession(imapPort);
 		try {
-			const resp = await session.command(
-				"A001",
-				'LOGIN "nobody@example.com" "somepassword"',
-			);
+			const resp = await session.command("A001", 'LOGIN "nobody@example.com" "somepassword"');
 			expect(resp[resp.length - 1]).toMatch(/^A001 NO/);
 		} finally {
 			await session.close();
 		}
 	});
 
-	test("login with disabled user is rejected", async () => {
+	it("login with disabled user is rejected", async () => {
 		const session = await openImapSession(imapPort);
 		try {
-			const resp = await session.command(
-				"A001",
-				'LOGIN "disabled@example.com" "disabled123"',
-			);
+			const resp = await session.command("A001", 'LOGIN "disabled@example.com" "disabled123"');
 			expect(resp[resp.length - 1]).toMatch(/^A001 NO/);
 		} finally {
 			await session.close();
 		}
 	});
 
-	test("login with sendonly user is rejected", async () => {
+	it("login with sendonly user is rejected", async () => {
 		// Dovecot: passdb finds the user (enabled=true) but userdb excludes it (sendonly=true).
 		// Depending on version it either sends A001 NO or closes the connection outright.
 		const session = await openImapSession(imapPort);
 		try {
-			const resp = await session.command(
-				"A001",
-				'LOGIN "sendonly@example.com" "sendonly123"',
-			);
+			const resp = await session.command("A001", 'LOGIN "sendonly@example.com" "sendonly123"');
 			expect(resp[resp.length - 1]).toMatch(/^A001 NO/);
 		} catch (err) {
 			// Connection closed without a tagged response is also a rejection.
-			expect((err as Error).message).toMatch(/Connection closed/);
+			expect((err as Error).message).toMatch(/Connection closed|Exchange aborted/);
 		} finally {
-			await session.close().catch(() => {});
+			await session.close();
 		}
 	});
 
-	test("PLAIN auth before STARTTLS is rejected", async () => {
+	it("PLAIN auth before STARTTLS is rejected", async () => {
 		// Dovecot sends * BAD [ALERT] and then closes the connection without a tagged response.
 		const client = TcpSocket.from();
-		await client.connect(imapPort, "127.0.0.1");
+		await client.connect(imapPort, { host: "127.0.0.1" });
 
 		let buffer = "";
 		const readLine = () =>
@@ -180,9 +162,7 @@ suite("auth", () => {
 			});
 
 		await readLine(); // greeting
-		await client.write(
-			Buffer.from('A001 LOGIN "alice@example.com" "alice123"\r\n'),
-		);
+		await client.write(encodeTextUtf8('A001 LOGIN "alice@example.com" "alice123"\r\n'));
 		// Dovecot sends * BAD [ALERT] then closes — no tagged response follows.
 		const resp = await readLine();
 		expect(resp).toMatch(/^\* (BAD|NO)/);
@@ -190,9 +170,8 @@ suite("auth", () => {
 	});
 });
 
-suite("mailbox", () => {
-	const { createUser, startContainer } = initSuite();
-	let imapPort: number;
+describe("mailbox", () => {
+	const { createUser, useContainer } = initSuite();
 
 	beforeAll(async () => {
 		await createUser({
@@ -200,10 +179,11 @@ suite("mailbox", () => {
 			domain: "example.com",
 			password: "{PLAIN}alice123",
 		});
-		({ imapPort } = await startContainer());
 	});
 
-	test("default mailboxes are present after first login", async () => {
+	const { imapPort } = useContainer();
+
+	it("default mailboxes are present after first login", async () => {
 		const session = await openImapSession(imapPort);
 		try {
 			await session.command("A001", 'LOGIN "alice@example.com" "alice123"');
@@ -220,7 +200,7 @@ suite("mailbox", () => {
 		}
 	});
 
-	test("SELECT INBOX succeeds after login", async () => {
+	it("SELECT INBOX succeeds after login", async () => {
 		const session = await openImapSession(imapPort);
 		try {
 			await session.command("A001", 'LOGIN "alice@example.com" "alice123"');
