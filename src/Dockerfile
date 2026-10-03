@@ -1,4 +1,4 @@
-FROM dovecot/dovecot:2.4.2-root@sha256:2954ecbf550bb9d1f1be6f08ee2c826e1c05ae1dadee8c496aaef8bbac612836
+FROM dovecot/dovecot:2.4.5-root@sha256:e6bae0e8f0ce8fe1941d93138ff7235f6dc6bcc397b9a171c31cb6a5a610b23b
 
 # hadolint ignore=DL3008,DL3009
 RUN set -ex; \
